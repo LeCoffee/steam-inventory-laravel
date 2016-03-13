@@ -1,7 +1,6 @@
 <?php namespace Braseidon\SteamInventory;
 
 use Config;
-use Illuminate\Cache\CacheManager;
 use Illuminate\Support\Collection;
 
 use InvalidArgumentException;
@@ -10,36 +9,17 @@ class SteamInventory
 {
 
     /**
-     * @var CacheManager $cache Caching layer
-     */
-    protected $cache;
-
-    /**
      * @var Collection $collection The Collection instance
      */
     protected $collection;
-
-    /**
-     * @var integer $cacheTime Number of minutes to cache a Steam ID's inventory
-     */
-    protected $cacheTime = 30;
-
-    /**
-     * @var string $cacheTag The Cache tag that will be used for all items
-     */
-    protected $cacheTag = 'steam.inventory';
 
     /**
      * @var mixed The last inventory that was pulled
      */
     protected $currentData;
 
-    /**
-     * @param string $cache Instantiate the Object
-     */
-    public function __construct(CacheManager $cache)
+    public function __construct()
     {
-        $this->cache = $cache;
         $this->collection = new Collection();
     }
 
@@ -51,18 +31,9 @@ class SteamInventory
      */
     public function loadInventory($steamId, $appId = 730, $contextId = 2)
     {
-        if ($this->cache->tags($this->cacheTag)->has($steamId)) {
-            $this->currentData = $this->cache->tags($this->cacheTag)->get($steamId);
-            // Return the cached data
-            return $this;
-        }
-
         $inventory = $this->getSteamInventory($steamId, $appId, $contextId);
 
         if (is_array($inventory)) {
-            $minutes = Config::get('braseidon.steam-inventory.cache_time');
-            $this->cache->tags($this->cacheTag)->put($steamId, $inventory, $minutes);
-
             $this->currentData = $inventory;
         } else {
             return false;
@@ -143,6 +114,22 @@ class SteamInventory
         // dd($data);
 
         $items = $this->parseItemDescriptions($data);
+
+        return $items;
+    }
+
+    public function getItems() {
+        // return $this->currentData;
+        $items = array();
+
+        foreach ($this->currentData["rgInventory"] as $item) {
+            $newItem = $this->currentData["rgDescriptions"][$item["classid"] . "_" . $item["instanceid"]];
+            $newItem["id"] = $item["id"];
+            $newItem["amount"] = $item["amount"];
+            $newItem["pos"] = $item["pos"];
+
+            $items[] = $newItem;
+        }
 
         return $items;
     }
