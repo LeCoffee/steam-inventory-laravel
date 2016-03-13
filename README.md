@@ -30,7 +30,7 @@ Include the Service Provider in your app's <code>config/app.php</code>.
 ```php
 'providers' => [
     // ...
-    'Braseidon\SteamInventory\Support\SteamInventoryServiceProvider',
+    Braseidon\SteamInventory\Support\SteamInventoryServiceProvider::class,
 ];
 ```
 
